@@ -4609,15 +4609,16 @@ esac
 
 if [ -n "$username" ]; then
     echo "Username: $username"
+    if [ -n "$ssh_port" ]; then
+        echo "SSH Port: $ssh_port"
+    fi
     if [ -n "$ssh_keys" ]; then
         echo "Public Key: $ssh_keys"
     else
         echo "Password: $password"
     fi
-    if [ -n "$ssh_port" ]; then
-        echo "SSH Port: $ssh_port"
-    fi
-fi
+
+fi 
 
 if is_netboot_xyz; then
     echo 'Reboot to start netboot.xyz.'
