@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# 选择要安装的系统
+OS="ubuntu"
+VERSION="24.04"
+EXTRA_OPTIONS="--minimal"  # 如：--minimal --ci
+SSH_PORT="36022"
+
 # 定义您的 SSH 公钥
 SSH_KEY="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDNxsE0W7du7ObU+/v9XUa7nnFz3HYaQSUASnu5/3fj4J9E0vHJ0eniN4pxyfXs7yeeCeyZXUs4nSlzyAx0whTKrrXmYXdouqNVTO34LbWMB8vQUAHXUtcu40sAD4aAx75Ft/xPLQGKwMgMyUpf5wDhJ7GMDPeFok0h2wmSIRiizYUGMhq6TciTBUPcY6KaMcAygWhRqcVDTu1Glq+BzVFzzB/YKcc7o8omtVV096mjofYl2sBWLsfxg/r1H+rihuiYUrRJ3Ma3PwxCI6go3iw56zedoIG7mj/BZ3mPl+8vvdwkqKn2vPcfQfAHoAtSrOMXJ9vCrr4+T4f9BBhPmGMT"
 
@@ -29,12 +35,6 @@ if [ ! -x "reinstall.sh" ]; then
     echo "错误：无法给脚本执行权限！"
     exit 1
 fi
-
-# 选择要安装的系统
-OS="ubuntu"
-VERSION="24.04"
-EXTRA_OPTIONS="--minimal"  # 如：--minimal --ci
-SSH_PORT="36022"
 
 # 查看脚本帮助信息，了解可用参数
 echo "查看安装脚本的帮助信息..."
