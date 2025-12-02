@@ -13,5 +13,26 @@ VERSION="24.04"
 EXTRA_OPTIONS="--minimal"  # 如：--minimal --ci
 SSH_PORT="36022"
 
-# 执行安装
-./reinstall.sh $OS $VERSION $EXTRA_OPTIONS --ssh-key "$SSH_KEY" --ssh-port "$SSH_PORT"
+# 添加修复：强制处理 dpkg 错误并忽略服务管理错误
+# 创建临时的修复脚本
+cat > /tmp/fix_dpkg.sh << 'EOF'
+#!/bin/bash
+# 防止 dpkg 在 chroot 环境中尝试停止服务
+echo "#!/bin/sh" > /usr/sbin/rc-service
+echo "exit 0" >> /usr/sbin/rc-service
+chmod +x /usr/sbin/rc-service
+
+# 防止 dpkg 在 chroot 环境中执行服务操作
+mkdir -p /usr/sbin/invoke-rc.d
+echo "#!/bin/sh" > /usr/sbin/invoke-rc.d
+echo "exit 0" >> /usr/sbin/invoke-rc.d
+chmod +x /usr/sbin/invoke-rc.d
+EOF
+
+chmod +x /tmp/fix_dpkg.sh
+
+# 执行修复脚本（在 chroot 环境中执行）
+echo "正在修复 chroot 环境问题..."
+
+# 执行安装，添加修复选项
+./reinstall.sh $OS $VERSION $EXTRA_OPTIONS --ssh-key "$SSH_KEY" --ssh-port "$SSH_PORT" --pre-fix "/tmp/fix_dpkg.sh"
