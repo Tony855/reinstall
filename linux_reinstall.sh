@@ -3,7 +3,7 @@
 # 选择要安装的系统
 OS="ubuntu"
 VERSION="24.04"
-EXTRA_OPTIONS=""  # 如：--minimal --ci
+EXTRA_OPTIONS="--minimal"  # 如：--minimal --ci
 SSH_PORT="36022"
 
 # 定义您的 SSH 公钥
