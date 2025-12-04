@@ -73,6 +73,82 @@ if [ $install_status -eq 0 ]; then
     echo "系统安装完成！"
     echo "========================================"
     
+    # 检测系统类型并配置防火墙
+    echo "正在检测系统类型并配置防火墙规则..."
+    
+    # 检查是否为Ubuntu/Debian系统
+    if [ -f /etc/debian_version ] || [ -f /etc/lsb-release ]; then
+        echo "检测到Ubuntu/Debian系统，使用ufw配置防火墙..."
+        
+        # 安装ufw（如果未安装）
+        if ! command -v ufw &> /dev/null; then
+            echo "安装ufw防火墙..."
+            apt-get update && apt-get install -y ufw
+        fi
+        
+        # 启用ufw并配置规则
+        echo "配置ufw防火墙规则..."
+        ufw --force enable
+        ufw allow "$SSH_PORT/tcp"
+        ufw allow 80/tcp
+        ufw allow 443/tcp
+        ufw --force reload
+        echo "ufw防火墙规则已更新，SSH端口 $SSH_PORT 已允许"
+        
+    # 检查是否为CentOS/RHEL/Fedora系统
+    elif [ -f /etc/redhat-release ] || [ -f /etc/fedora-release ]; then
+        echo "检测到CentOS/RHEL/Fedora系统，使用firewalld配置防火墙..."
+        
+        # 检查firewalld是否安装
+        if ! command -v firewall-cmd &> /dev/null; then
+            echo "安装firewalld防火墙..."
+            yum install -y firewalld || dnf install -y firewalld
+            systemctl enable --now firewalld
+        fi
+        
+        # 配置firewalld规则
+        echo "配置firewalld防火墙规则..."
+        firewall-cmd --permanent --add-port="$SSH_PORT/tcp"
+        firewall-cmd --permanent --add-service=http
+        firewall-cmd --permanent --add-service=https
+        firewall-cmd --reload
+        echo "firewalld防火墙规则已更新，SSH端口 $SSH_PORT 已允许"
+        
+    # 检查是否为Arch Linux系统
+    elif [ -f /etc/arch-release ]; then
+        echo "检测到Arch Linux系统，使用iptables配置防火墙..."
+        
+        # 使用iptables配置
+        iptables -A INPUT -p tcp --dport "$SSH_PORT" -j ACCEPT
+        iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+        iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+        
+        # 保存iptables规则（如果有iptables-persistent）
+        if command -v iptables-save &> /dev/null; then
+            iptables-save > /etc/iptables/iptables.rules
+        fi
+        echo "iptables防火墙规则已更新，SSH端口 $SSH_PORT 已允许"
+        
+    else
+        echo "未识别的系统类型，请手动配置防火墙规则"
+        echo "请手动允许以下端口："
+        echo "SSH端口: $SSH_PORT/tcp"
+        echo "HTTP端口: 80/tcp"
+        echo "HTTPS端口: 443/tcp"
+    fi
+    
+    # 显示当前防火墙状态
+    echo "========================================"
+    echo "当前防火墙状态："
+    if command -v ufw &> /dev/null; then
+        ufw status verbose
+    elif command -v firewall-cmd &> /dev/null; then
+        firewall-cmd --list-all
+    elif command -v iptables &> /dev/null; then
+        iptables -L -n | grep "$SSH_PORT\|80\|443"
+    fi
+    echo "========================================"
+    
     read -p "是否立即重启系统？(y/N): " reboot_confirm
     if [[ "$reboot_confirm" =~ ^[Yy]$ ]]; then
         echo "系统将在10秒后重启..."
