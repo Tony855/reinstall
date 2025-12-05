@@ -1934,7 +1934,7 @@ basic_init() {
         allow_root_password_login $os_dir
         allow_password_login $os_dir
     fi
-
+	
     # 下载 fix-eth-name.service
     # 即使开了 net.ifnames=0 也需要
     # 因为 alpine live 和目标系统的网卡顺序可能不同
@@ -3936,6 +3936,63 @@ change_ssh_port() {
     ssh_port=$2
 
     change_ssh_conf "$os_dir" Port "$ssh_port" 01-change-ssh-port.conf
+
+    # 添加防火墙规则
+    add_firewall_rule_for_ssh_port "$os_dir" "$ssh_port"
+}
+
+add_firewall_rule_for_ssh_port() {
+    local os_dir=$1
+    local ssh_port=$2
+
+    case "$distro" in
+        debian|ubuntu)
+            # 使用 ufw
+            if chroot "$os_dir" which ufw >/dev/null 2>&1; then
+                chroot "$os_dir" ufw allow "$ssh_port"/tcp
+                chroot "$os_dir" ufw reload
+            else
+                warn "ufw not found, skipping firewall rule for SSH port $ssh_port"
+            fi
+            ;;
+        centos|almalinux|rocky|oracle|redhat|fedora|anolis|opencloudos|openeuler)
+            # 使用 firewalld
+            if chroot "$os_dir" which firewall-cmd >/dev/null 2>&1; then
+                chroot "$os_dir" firewall-cmd --permanent --add-port="$ssh_port"/tcp
+                chroot "$os_dir" firewall-cmd --reload
+            else
+                warn "firewalld not found, skipping firewall rule for SSH port $ssh_port"
+            fi
+            ;;
+        opensuse)
+            # 使用 SuSEfirewall2
+            if chroot "$os_dir" which SuSEfirewall2 >/dev/null 2>&1; then
+                chroot "$os_dir" sed -i "/FW_SERVICES_EXT_TCP=\"/ s/\"$/ $ssh_port\"/" /etc/sysconfig/SuSEfirewall2
+                chroot "$os_dir" SuSEfirewall2
+            else
+                warn "SuSEfirewall2 not found, skipping firewall rule for SSH port $ssh_port"
+            fi
+            ;;
+        alpine)
+            # Alpine 使用 iptables
+            if chroot "$os_dir" which iptables >/dev/null 2>&1; then
+                chroot "$os_dir" iptables -A INPUT -p tcp --dport "$ssh_port" -j ACCEPT
+                # 保存规则
+                if [ -d "$os_dir/etc/iptables" ]; then
+                    chroot "$os_dir" iptables-save > /etc/iptables/rules.v4
+                fi
+            else
+                warn "iptables not found, skipping firewall rule for SSH port $ssh_port"
+            fi
+            ;;
+        arch|gentoo|nixos|aosc)
+            # 这些发行版可能需要用户手动配置防火墙
+            info "Please manually configure firewall for SSH port $ssh_port on $distro"
+            ;;
+        *)
+            warn "Unknown distribution $distro, skipping firewall rule for SSH port $ssh_port"
+            ;;
+    esac
 }
 
 change_root_password() {
