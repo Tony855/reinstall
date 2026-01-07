@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 选择要安装的系统
-OS="ubuntu"
+OS="Ubuntu"
 VERSION="24.04"
 EXTRA_OPTIONS="--minimal"  # 如：--minimal --ci
 SSH_PORT="22"
