@@ -1323,11 +1323,17 @@ Continue?
         20.04) codename=focal ;;
         22.04) codename=jammy ;;
         24.04) codename=noble ;;
-        25.10) codename=questing ;; # non-lts
+        25.10) codename=questing ;;
         esac
     
+        # 【关键修改】如果用户提供了 --iso，则强制使用传统安装模式，并清空 cloud_image
+        if [ -n "$iso" ]; then
+            cloud_image=
+            unset cloud_image
+        fi
+    
         if is_use_cloud_image; then
-            # cloud image 部分保持不变
+            # 云镜像分支（仅在用户没有提供 ISO 且内存允许时使用）
             if is_in_china; then
                 ci_mirror=https://mirror.nju.edu.cn/ubuntu-cloud-images
             else
@@ -1358,9 +1364,8 @@ Continue?
             fi
         else
             # 传统安装模式（ISO）
-            # 关键修改：优先使用用户通过 --iso 传入的链接
+            # 如果用户已经提供了 ISO 链接，直接使用；否则自动查找
             if [ -z "$iso" ]; then
-                # 用户没有提供 ISO 链接，自动查找
                 if is_in_china; then
                     case "$basearch" in
                     "x86_64") mirror=https://mirror.nju.edu.cn/ubuntu-releases/$releasever ;;
@@ -1373,12 +1378,10 @@ Continue?
                     esac
                 fi
     
-                filename=$(curl -L $mirror/ | grep -oP "ubuntu-$releasever.*?-live-server-$basearch_alt.iso" |
-                    sort -uV | tail -1 | grep .)
+                filename=$(curl -L $mirror/ | grep -oP "ubuntu-$releasever.*?-live-server-$basearch_alt.iso" | sort -uV | tail -1 | grep .)
                 iso=$mirror/$filename
                 test_url "$iso" iso
             else
-                # 用户已提供 ISO 链接，直接使用
                 info "Using user-provided ISO: $iso"
                 test_url "$iso" iso
             fi
