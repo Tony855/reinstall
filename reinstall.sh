@@ -1325,28 +1325,19 @@ Continue?
         24.04) codename=noble ;;
         25.10) codename=questing ;; # non-lts
         esac
-
+    
         if is_use_cloud_image; then
-            # cloud image
+            # cloud image 部分保持不变
             if is_in_china; then
-                # 有的源没有 releases 镜像
-                # https://mirrors.tuna.tsinghua.edu.cn/ubuntu-cloud-images/releases/
-                #   https://unicom.mirrors.ustc.edu.cn/ubuntu-cloud-images/releases/
-                #            https://mirror.nju.edu.cn/ubuntu-cloud-images/releases/
-
-                # mirrors.cloud.tencent.com
                 ci_mirror=https://mirror.nju.edu.cn/ubuntu-cloud-images
             else
                 ci_mirror=https://cloud-images.ubuntu.com
             fi
-
-            # 以下版本有 minimal 镜像
-            # amd64 所有
-            # arm64 24.04 和以上
+    
             is_have_minimal_image() {
                 [ "$basearch_alt" = amd64 ] || [ "${releasever%.*}" -ge 24 ]
             }
-
+    
             get_suffix() {
                 if [ "$releasever" = 16.04 ]; then
                     if is_efi; then
@@ -1356,39 +1347,43 @@ Continue?
                     fi
                 fi
             }
-
+    
             if [ "$minimal" = 1 ]; then
                 if ! is_have_minimal_image; then
                     error_and_exit "Minimal cloud image is not available for $releasever $basearch_alt."
                 fi
                 eval ${step}_img="$ci_mirror/minimal/releases/$codename/release/ubuntu-$releasever-minimal-cloudimg-$basearch_alt$(get_suffix).img"
             else
-                # 用 codename 而不是 releasever，可减少一次跳转
                 eval ${step}_img="$ci_mirror/releases/$codename/release/ubuntu-$releasever-server-cloudimg-$basearch_alt$(get_suffix).img"
             fi
         else
-            # 传统安装
-            if is_in_china; then
-                case "$basearch" in
-                "x86_64") mirror=https://mirror.nju.edu.cn/ubuntu-releases/$releasever ;;
-                "aarch64") mirror=https://mirror.nju.edu.cn/ubuntu-cdimage/releases/$releasever/release ;;
-                esac
+            # 传统安装模式（ISO）
+            # 关键修改：优先使用用户通过 --iso 传入的链接
+            if [ -z "$iso" ]; then
+                # 用户没有提供 ISO 链接，自动查找
+                if is_in_china; then
+                    case "$basearch" in
+                    "x86_64") mirror=https://mirror.nju.edu.cn/ubuntu-releases/$releasever ;;
+                    "aarch64") mirror=https://mirror.nju.edu.cn/ubuntu-cdimage/releases/$releasever/release ;;
+                    esac
+                else
+                    case "$basearch" in
+                    "x86_64") mirror=https://releases.ubuntu.com/$releasever ;;
+                    "aarch64") mirror=https://cdimage.ubuntu.com/releases/$releasever/release ;;
+                    esac
+                fi
+    
+                filename=$(curl -L $mirror/ | grep -oP "ubuntu-$releasever.*?-live-server-$basearch_alt.iso" |
+                    sort -uV | tail -1 | grep .)
+                iso=$mirror/$filename
+                test_url "$iso" iso
             else
-                case "$basearch" in
-                "x86_64") mirror=https://releases.ubuntu.com/$releasever ;;
-                "aarch64") mirror=https://cdimage.ubuntu.com/releases/$releasever/release ;;
-                esac
+                # 用户已提供 ISO 链接，直接使用
+                info "Using user-provided ISO: $iso"
+                test_url "$iso" iso
             fi
-
-            # iso
-            filename=$(curl -L $mirror/ | grep -oP "ubuntu-$releasever.*?-live-server-$basearch_alt.iso" |
-                sort -uV | tail -1 | grep .)
-            iso=$mirror/$filename
-            # 在 ubuntu 20.04 上，file 命令检测 ubuntu 22.04 iso 结果是 DOS/MBR boot sector
-            test_url "$iso" iso
+    
             eval ${step}_iso=$iso
-
-            # ks
             eval ${step}_ks=$confhome/ubuntu.yaml
             eval ${step}_minimal=$minimal
         fi
