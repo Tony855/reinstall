@@ -7266,6 +7266,17 @@ trans() {
 # debian initrd 会寻找 main
 # 并调用本文件的 create_ifupdown_config 方法
 : main
+# set hostname
+if [ -f /configs/hostname ]; then
+    hn=$(cat /configs/hostname)
+    if [ -n "$hn" ]; then
+        echo "$hn" > /etc/hostname
+        hostname -F /etc/hostname 2>/dev/null || hostname "$hn"
+        # 更新 /etc/hosts 中的本机条目
+        sed -i "/127\.0\.1\.1/d" /etc/hosts 2>/dev/null
+        echo "127.0.1.1 $hn" >> /etc/hosts
+    fi
+fi
 
 # 复制脚本
 # 用于打印错误或者再次运行
