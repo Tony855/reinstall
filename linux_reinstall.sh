@@ -3,7 +3,7 @@
 # 默认配置
 DEFAULT_OS="Ubuntu"
 DEFAULT_VERSION=""  # 空版本表示最新稳定版
-DEFAULT_EXTRA_OPTIONS="--minimal"  # 如：--minimal --ci
+DEFAULT_EXTRA_OPTIONS="--ci"  # 如：--minimal --ci
 DEFAULT_SSH_PORT="22"
 
 # 定义您的 SSH 公钥
