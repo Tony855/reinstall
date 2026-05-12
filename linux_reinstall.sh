@@ -18,7 +18,7 @@ show_os_menu() {
     echo ""
     echo "请选择要安装的操作系统："
     echo "1. Debian"
-    echo "2. Ubuntu (默认)"
+    echo "2. Ubuntu"
     echo "3. CentOS"
     echo "4. AlmaLinux"
     echo "5. RockyLinux"
